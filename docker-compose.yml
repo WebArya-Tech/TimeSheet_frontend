@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timesheet-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api
+    restart: unless-stopped
+    networks:
+      - timesheet-network
+    depends_on:
+      - backend
+
+  backend:
+    image: timesheet-backend:latest
+    container_name: timesheet-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mongodb+srv://admin:password@mongodb:27017/timesheet?authSource=admin
+      DEBUG: "false"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173"
+    networks:
+      - timesheet-network
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7.0-alpine
+    container_name: timesheet-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: timesheet
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    restart: unless-stopped
+    networks:
+      - timesheet-network
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+
+networks:
+  timesheet-network:
+    driver: bridge
